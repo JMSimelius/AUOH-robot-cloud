@@ -1,8 +1,8 @@
 let three_view = document.getElementById('three_view');
 
 let renderer = new THREE.WebGLRenderer();
-
 let scene = new THREE.Scene();
+
 let width = window.innerWidth;
 let height = window.innerHeight;
 let view_angle = 45;
@@ -14,7 +14,7 @@ camera.position.x = 5;
 camera.position.y = 5;
 camera.position.z = 5;
 camera.up = new THREE.Vector3(0,0,1);
-light.lookAt(scene.position);
+//light.lookAt(scene.position);
 
 renderer.setSize(width, height);
 three_view.appendChild(renderer.domElement);
@@ -109,7 +109,8 @@ load_geometries().then(() =>{
 
     // move parts to origin
     joints[1].geometry.translate(0, -0.282, 0);
-    joints[2].geometry.translate(-0.312, 0.270, 0.117);
+    joints[2].geometry.translate(-0.312, -0.670, 0.117);
+    joints[3].geometry.translate(-0.26869, -1.74413, 0.19685);
 
     scene.add(joints[0]);
     joints[0].rotation.set(THREE.Math.degToRad(90), 0, 0);
@@ -120,12 +121,21 @@ load_geometries().then(() =>{
     offsets[0].add(joints[1]);
 
     offsets.push(new THREE.Group());
-    offsets[1].position.set(0.312, -0.012, -0.117);
+    offsets[1].position.set(0.312, 0.388, -0.117);
     joints[1].add(offsets[1]);
     offsets[1].add(joints[2]);
-    joints[2].rotation.set(0, THREE.Math.degToRad(45), 0);
+
+
+    //scene.add(joints[3]);
+    offsets.push(new THREE.Group());
+    offsets[2].position.set(-0.04331, 1.074413, -0.07985);
+    joints[2].add(offsets[2]);
+    offsets[2].add(joints[3]);
+
+
+    joints[2].rotation.set(0, 0, THREE.Math.degToRad(45));
     //J1: [0, 282,0] Y
-    //J2: [312, 270, -117] Z
+    //J2: [312, 670, -117] Z
     //J3: [268.69, 1744.13, -196.85] Z
     //J4: [1315.19, 1969.13, 0.15] X
     //J5: [1548.69, 1969.13, 87.15] Z
@@ -157,4 +167,19 @@ const resize = () => {
 window.onresize = resize;
 
 
-//Camera setup
+const mqtt_client=mqtt.connect('wss://mqtt-broker-jms.herokuapp.com');
+
+mqtt_client.on('connect', ()=>{
+    mqtt_client.subscribe('joints');
+});
+
+mqtt_client.on('message', (topic, message)=>{
+    if(joints.length == 6){
+    const joint_data=JSON.parse(message);
+
+    joints[1].rotation.set(0, THREE.Math.degToRad(joint_data.joints[0]),0);
+    joints[2].rotation.set(0, 0, THREE.Math.degToRad(joint_data.joints[1]),0);
+    joints[3].rotation.set(0, 0, THREE.Math.degToRad(joint_data.joints[2]) - THREE.Math.degToRad(joint_data.joints[1]));
+    console.log(message);
+    }
+});
